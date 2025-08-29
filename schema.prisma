@@ -1,0 +1,88 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// --- Core user identity ---
+model User {
+  id          String               @id @default(cuid())
+  email       String               @unique
+  createdAt   DateTime             @default(now())
+  deletedAt   DateTime?
+  credentials WebAuthnCredential[]
+  sessions    Session[]
+  consents    Consent[]
+  backupCodes BackupCode[]
+}
+
+// --- Passkeys / WebAuthn ---
+model WebAuthnCredential {
+  id         String   @id @default(cuid())
+  user       User     @relation(fields: [userId], references: [id])
+  userId     String
+  credId     String   @unique // base64url
+  publicKey  Bytes
+  counter    Int
+  transports String?
+  createdAt  DateTime @default(now())
+}
+
+// --- Session management ---
+model Session {
+  id             String         @id @default(cuid())
+  user           User           @relation(fields: [userId], references: [id])
+  userId         String
+  deviceId       String
+  dpopThumbprint String?
+  lastSeenAt     DateTime       @default(now())
+  revokedAt      DateTime?
+  refreshTokens  RefreshToken[]
+  stepUps        StepUp[]
+}
+
+// --- Refresh token rotation ---
+model RefreshToken {
+  id             String    @id @default(cuid())
+  session        Session   @relation(fields: [sessionId], references: [id])
+  sessionId      String
+  hashedToken    String
+  expiresAt      DateTime
+  usedAt         DateTime?
+  revokedAt      DateTime?
+  rotationParent String?
+}
+
+// --- Consent tracking ---
+model Consent {
+  id        String    @id @default(cuid())
+  user      User      @relation(fields: [userId], references: [id])
+  userId    String
+  purpose   String // e.g., "location.precise", "location.whileUsing"
+  scope     String // JSON or enum set
+  grantedAt DateTime  @default(now())
+  revokedAt DateTime?
+}
+
+// --- Step-up authentication events ---
+model StepUp {
+  id        String   @id @default(cuid())
+  session   Session  @relation(fields: [sessionId], references: [id])
+  sessionId String
+  method    String // "webauthn"
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+}
+
+// --- Backup codes for recovery ---
+model BackupCode {
+  id         String    @id @default(cuid())
+  user       User      @relation(fields: [userId], references: [id])
+  userId     String
+  hashedCode String
+  usedAt     DateTime?
+  createdAt  DateTime  @default(now())
+}
