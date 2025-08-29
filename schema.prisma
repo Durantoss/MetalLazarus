@@ -1,88 +1,56 @@
-generator client {
-  provider = "prisma-client-js"
-}
-
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-// --- Core user identity ---
+generator client {
+  provider = "prisma-client-js"
+}
+
 model User {
-  id          String               @id @default(cuid())
-  email       String               @unique
-  createdAt   DateTime             @default(now())
-  deletedAt   DateTime?
-  credentials WebAuthnCredential[]
-  sessions    Session[]
-  consents    Consent[]
-  backupCodes BackupCode[]
-}
-
-// --- Passkeys / WebAuthn ---
-model WebAuthnCredential {
-  id         String   @id @default(cuid())
-  user       User     @relation(fields: [userId], references: [id])
-  userId     String
-  credId     String   @unique // base64url
-  publicKey  Bytes
-  counter    Int
-  transports String?
-  createdAt  DateTime @default(now())
-}
-
-// --- Session management ---
-model Session {
-  id             String         @id @default(cuid())
-  user           User           @relation(fields: [userId], references: [id])
-  userId         String
-  deviceId       String
-  dpopThumbprint String?
-  lastSeenAt     DateTime       @default(now())
-  revokedAt      DateTime?
-  refreshTokens  RefreshToken[]
-  stepUps        StepUp[]
-}
-
-// --- Refresh token rotation ---
-model RefreshToken {
-  id             String    @id @default(cuid())
-  session        Session   @relation(fields: [sessionId], references: [id])
-  sessionId      String
-  hashedToken    String
-  expiresAt      DateTime
-  usedAt         DateTime?
-  revokedAt      DateTime?
-  rotationParent String?
-}
-
-// --- Consent tracking ---
-model Consent {
   id        String    @id @default(cuid())
-  user      User      @relation(fields: [userId], references: [id])
-  userId    String
-  purpose   String // e.g., "location.precise", "location.whileUsing"
-  scope     String // JSON or enum set
-  grantedAt DateTime  @default(now())
-  revokedAt DateTime?
+  email     String?   @unique
+  stagename String?
+  createdAt DateTime  @default(now())
+  passkeys  Passkey[]
+  sessions  Session[]
 }
 
-// --- Step-up authentication events ---
-model StepUp {
+// One row per registered passkey (aka credential)
+model Passkey {
+  id           String   @id // credentialId (base64url)
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  publicKey    String   // credentialPublicKey (base64url)
+  counter      Int      @default(0)
+  transports   String?  // CSV from response.transports
+  deviceName   String?
+  createdAt    DateTime @default(now())
+  lastUsedAt   DateTime @updatedAt
+
+  @@index([userId])
+}
+
+// Persist challenges to avoid in-memory state in serverless
+model WebAuthnChallenge {
   id        String   @id @default(cuid())
-  session   Session  @relation(fields: [sessionId], references: [id])
-  sessionId String
-  method    String // "webauthn"
+  userId    String
+  type      String   // "registration" | "authentication"
+  challenge String
   createdAt DateTime @default(now())
-  expiresAt DateTime
+
+  @@index([userId, type])
+  @@index([createdAt])
 }
 
-// --- Backup codes for recovery ---
-model BackupCode {
-  id         String    @id @default(cuid())
-  user       User      @relation(fields: [userId], references: [id])
-  userId     String
-  hashedCode String
-  usedAt     DateTime?
-  createdAt  DateTime  @default(now())
+// Session model for authentication tracking
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deviceId  String?
+  createdAt DateTime @default(now())
+  expiresAt DateTime?
+
+  @@index([userId])
 }
