@@ -7,7 +7,7 @@ import {
   verifyAuthenticationResponse,
 } from '@simplewebauthn/server';
 import base64url from 'base64url';
-import { prisma } from '../src/lib/prisma.js';
+import { prisma } from '../lib/prisma.js';
 
 const router = express.Router();
 const rpName = 'Metal Lazarus';
