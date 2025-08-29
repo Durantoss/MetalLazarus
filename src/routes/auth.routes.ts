@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { prisma } from '../lib/prisma';
+import { prisma } from '../lib/prisma.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
@@ -71,6 +71,8 @@ router.post('/login', async (req, res) => {
     if (!user) return res.status(401).json({ error: 'Invalid credentials' });
 
     const legacyCred = user.credentials[0];
+    if (!legacyCred) return res.status(401).json({ error: 'Invalid credentials' });
+
     const valid = await bcrypt.compare(password, legacyCred.publicKey.toString());
 
     if (!valid) return res.status(401).json({ error: 'Invalid credentials' });
