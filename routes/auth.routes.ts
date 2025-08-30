@@ -1,21 +1,20 @@
+// Remove the invalid webauthn import and add missing prisma import
 import { Router } from 'express';
 import { prisma } from '../lib/prisma.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+// Remove: import { ... } from '../lib/webauthn.js';
+
 
 const router = Router();
 
-// --- Helpers ---
-function signToken(userId: string) {
-  return jwt.sign({ sub: userId }, process.env.JWT_SECRET as string, {
-    expiresIn: '15m',
-  });
+// --- Token Helpers ---
+function signAccessToken(userId: string): string {
+  return jwt.sign({ sub: userId }, process.env.JWT_SECRET!, { expiresIn: '15m' });
 }
 
-function signRefreshToken(sessionId: string) {
-  return jwt.sign({ sid: sessionId }, process.env.SESSION_SECRET as string, {
-    expiresIn: '30d',
-  });
+function signRefreshToken(sessionId: string): string {
+  return jwt.sign({ sid: sessionId }, process.env.SESSION_SECRET!, { expiresIn: '30d' });
 }
 
 // --- Registration ---
@@ -33,7 +32,7 @@ router.post('/register', async (req, res) => {
         email,
         credentials: {
           create: {
-            credId: `legacy-${Date.now()}`, // placeholder for WebAuthn migration
+            credId: `legacy-${Date.now()}`,
             publicKey: Buffer.from(hashed),
             counter: 0,
           },
@@ -49,11 +48,11 @@ router.post('/register', async (req, res) => {
     });
 
     res.json({
-      accessToken: signToken(user.id),
+      accessToken: signAccessToken(user.id),
       refreshToken: signRefreshToken(session.id),
     });
   } catch (err) {
-    console.error(err);
+    console.error('❌ Registration error:', err);
     res.status(500).json({ error: 'Registration failed' });
   }
 });
@@ -68,11 +67,11 @@ router.post('/login', async (req, res) => {
       include: { credentials: true },
     });
 
-    if (!user) return res.status(401).json({ error: 'Invalid credentials' });
+    if (!user || !user.credentials.length) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
 
     const legacyCred = user.credentials[0];
-    if (!legacyCred) return res.status(401).json({ error: 'Invalid credentials' });
-
     const valid = await bcrypt.compare(password, legacyCred.publicKey.toString());
 
     if (!valid) return res.status(401).json({ error: 'Invalid credentials' });
@@ -85,31 +84,27 @@ router.post('/login', async (req, res) => {
     });
 
     res.json({
-      accessToken: signToken(user.id),
+      accessToken: signAccessToken(user.id),
       refreshToken: signRefreshToken(session.id),
     });
   } catch (err) {
-    console.error(err);
+    console.error('❌ Login error:', err);
     res.status(500).json({ error: 'Login failed' });
   }
 });
 
-// --- Consent ---
+// --- Consent Tracking ---
 router.post('/consent', async (req, res) => {
   try {
     const { userId, purpose, scope } = req.body;
 
     const consent = await prisma.consent.create({
-      data: {
-        userId,
-        purpose,
-        scope,
-      },
+      data: { userId, purpose, scope },
     });
 
     res.json(consent);
   } catch (err) {
-    console.error(err);
+    console.error('❌ Consent error:', err);
     res.status(500).json({ error: 'Consent save failed' });
   }
 });

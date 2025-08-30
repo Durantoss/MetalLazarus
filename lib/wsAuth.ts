@@ -1,4 +1,6 @@
-import { verifyAccessToken } from '@/lib/jwt';
+import { verifyAccessToken } from './jwt.js';
+import { signAccessToken } from './jwt.js';
+
 
 /**
  * Extracts the JWT from the WebSocket URL query string.

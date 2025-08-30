@@ -6,11 +6,11 @@ import { createServer } from 'http';
 import { WebSocketServer } from 'ws';
 
 // --- Helper imports ---
-import { authenticateFromUrl } from './lib/wsAuth.js';
+import { authenticateFromUrl } from '../../lib/wsAuth.js';
 
 // --- Route imports ---
-import authRoutes from './routes/auth.routes.js';
-import webauthnRoutes from './routes/webauthn.routes.js';
+import authRoutes from '../../routes/auth.routes.js';
+import webauthnRoutes from '../../routes/webauthn.routes.js';
 
 // --- Load environment variables ---
 dotenv.config();

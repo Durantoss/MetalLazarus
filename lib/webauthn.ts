@@ -1,4 +1,4 @@
-import { prisma } from './prisma'; // adjust import to your Prisma client
+import { prisma } from './prisma.js';
 import {
   generateRegistrationOptions,
   verifyRegistrationResponse,

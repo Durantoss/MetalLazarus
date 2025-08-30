@@ -6,7 +6,7 @@ async function api(path: string, body?: any) {
   const res = await fetch(path, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: body ? JSON.stringify(body) : undefined,
+    body: body ? JSON.stringify(body) : null,
   });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
