@@ -1,35 +1,40 @@
 {
   "compilerOptions": {
-    "baseUrl": ".",
-    "paths": {
-      "@lib/*": ["lib/*"]
-    },
-    "module": "nodenext",
-    "target": "esnext",
-    "types": [],
+    "target": "ESNext",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "allowJs": true,
+    "checkJs": false,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "outDir": "dist",
     "sourceMap": true,
     "declaration": true,
     "declarationMap": true,
+    "strict": true,
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
-    "strict": true,
-    "jsx": "react-jsx",
     "verbatimModuleSyntax": true,
     "isolatedModules": true,
     "noUncheckedSideEffectImports": true,
     "moduleDetection": "force",
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "jsx": "react-jsx",
+    "typeRoots": ["./node_modules/@types", "./types"],
+    "types": []
   },
   "include": [
     "server.ts",
     "lib/**/*",
-    "routes/**/*"
+    "routes/**/*",
+    "controllers/**/*",
+    "models/**/*",
+    "middlewares/**/*"
   ],
   "exclude": [
     "app/**/*",
     "components/**/*",
     "hooks/**/*",
-    "server.alt.ts",
-    "src/**/*"
+    "server.alt.ts"
   ]
 }

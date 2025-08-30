@@ -1,45 +1,52 @@
-// --- Core imports ---
-import express from 'express';
+// ─── Core imports ─────────────────────────────────────
+import express, { Request, Response } from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import { createServer } from 'http';
-import { WebSocketServer } from 'ws';
-import { setMaxListeners } from 'events';
-setMaxListeners(20); // or even higher if needed
+import { WebSocketServer, WebSocket } from 'ws';
 
-// --- Helper imports ---
-import { authenticateFromUrl } from './lib/wsAuth.js';
-
-// --- Route imports ---
-import authRoutes from './routes/auth.routes.js';
-import webauthnRoutes from './routes/webauthn.routes.js';
-import adminRoutes from './routes/admin.routes.js';
-
-// --- Load environment variables ---
+// ─── Load environment variables ───────────────────────
 dotenv.config();
 
-// --- Create Express app ---
+// ─── Route + Controller imports ───────────────────────
+import authRoutes from './routes/auth.routes.js';
+import webauthnRoutes from './routes/webauthn.routes.js';
+import protectedRoutes from './src/routes/protectedRoutes.ts';
+import { login } from './src/controllers/authController.ts';
+
+// ─── Helper imports ───────────────────────────────────
+import { authenticateFromUrl } from './lib/wsAuth.js';
+
+// ─── Extend WebSocket type for userId/deviceId ────────
+declare module 'ws' {
+  interface WebSocket {
+    userId?: string;
+    deviceId?: string;
+  }
+}
+
+// ─── Create Express app ───────────────────────────────
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// --- Mount routes ---
+// ─── Mount routes ─────────────────────────────────────
 app.use('/auth', authRoutes);
-app.use('/auth', webauthnRoutes);
-app.use('/auth', adminRoutes);
+app.use('/webauthn', webauthnRoutes);
+app.post('/login', login);
+app.use('/api', protectedRoutes);
 
-// --- Create HTTP server ---
+// ─── Create HTTP + WebSocket servers ──────────────────
 const server = createServer(app);
-
-// --- Create WebSocket server ---
 const wss = new WebSocketServer({ noServer: true });
 
+// ─── Handle WebSocket upgrade ─────────────────────────
 server.on('upgrade', (req, socket, head) => {
-  const path = new URL(req.url!, 'http://localhost').pathname;
-  if (path !== '/messaging-ws') return;
+  const pathname = new URL(req.url || '', 'http://localhost').pathname;
+  if (pathname !== '/messaging-ws') return;
 
   try {
-    authenticateFromUrl(req.url!);
+    authenticateFromUrl(req.url || '');
     wss.handleUpgrade(req, socket, head, ws => {
       wss.emit('connection', ws, req);
     });
@@ -48,20 +55,28 @@ server.on('upgrade', (req, socket, head) => {
   }
 });
 
-wss.on('connection', (ws, req) => {
-  const auth = authenticateFromUrl(req.url || '');
-  (ws as any).userId = auth.userId;
-  (ws as any).deviceId = auth.deviceId;
+// ─── Handle WebSocket connections ─────────────────────
+wss.on('connection', (ws: WebSocket, req: Request) => {
+  let auth;
+  try {
+    auth = authenticateFromUrl(req.url || '');
+  } catch {
+    ws.close(1008, 'Unauthorized');
+    return;
+  }
+
+  ws.userId = auth.userId;
+  ws.deviceId = auth.deviceId;
 
   console.log(`✅ WS connected: user=${auth.userId} device=${auth.deviceId}`);
 
-  ws.on('message', msg => {
-    console.log(`💬 ${auth.userId}:`, msg.toString());
+  ws.on('message', raw => {
+    console.log(`💬 ${auth.userId}:`, raw.toString());
     // TODO: handle message routing here
   });
 });
 
-// --- Boot server ---
+// ─── Boot server ──────────────────────────────────────
 const port = process.env.PORT || 3000;
 server.listen(port, () => {
   console.log(`🚀 Metal Lazarus backend running at http://localhost:${port}`);
