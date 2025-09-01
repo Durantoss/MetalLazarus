@@ -1,25 +1,27 @@
 {
   "compilerOptions": {
-    "target": "ESNext",
+    "target": "ES2020",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
+    "jsx": "react-jsx",
     "allowJs": true,
     "checkJs": false,
     "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
     "resolveJsonModule": true,
-    "outDir": "dist",
-    "sourceMap": true,
-    "declaration": true,
-    "declarationMap": true,
-    "strict": true,
-    "noUncheckedIndexedAccess": true,
-    "exactOptionalPropertyTypes": true,
     "verbatimModuleSyntax": true,
     "isolatedModules": true,
     "noUncheckedSideEffectImports": true,
     "moduleDetection": "force",
-    "skipLibCheck": true,
-    "jsx": "react-jsx",
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "outDir": "dist",
     "typeRoots": ["./node_modules/@types", "./types"],
     "types": []
   },
@@ -29,12 +31,13 @@
     "routes/**/*",
     "controllers/**/*",
     "models/**/*",
-    "middlewares/**/*"
+    "middlewares/**/*",
+    "client/src/**/*"
   ],
   "exclude": [
-    "app/**/*",
-    "components/**/*",
-    "hooks/**/*",
-    "server.alt.ts"
+    "dist",
+    "node_modules",
+    "client/public",
+    "client/build"
   ]
 }

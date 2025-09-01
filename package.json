@@ -38,6 +38,8 @@
     "jsonwebtoken": "^9.0.2",
     "package-lock.json": "^1.0.0",
     "prisma": "^6.15.0",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
     "ws": "^8.18.3"
   },
   "devDependencies": {

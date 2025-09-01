@@ -69,6 +69,9 @@ router.post('/login', async (req, res) => {
     }
 
     const legacyCred = user.credentials[0];
+    if (!legacyCred) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
     const valid = await bcrypt.compare(password, legacyCred.publicKey.toString());
 
     if (!valid) return res.status(401).json({ error: 'Invalid credentials' });

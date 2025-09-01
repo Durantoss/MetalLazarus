@@ -9,12 +9,39 @@ generator client {
 }
 
 model User {
-  id        String    @id @default(cuid())
-  email     String?   @unique
-  stagename String?
-  createdAt DateTime  @default(now())
-  passkeys  Passkey[]
-  sessions  Session[]
+  id          String       @id @default(cuid())
+  email       String?      @unique
+  stagename   String?
+  createdAt   DateTime     @default(now())
+  passkeys    Passkey[]
+  sessions    Session[]
+  credentials Credential[] // Legacy password auth
+  consents    Consent[]    // Consent tracking
+}
+
+// Legacy password-based credentials (for migration compatibility)
+model Credential {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  credId    String   // Legacy credential identifier
+  publicKey Bytes    // Hashed password stored as bytes
+  counter   Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+// Consent tracking model
+model Consent {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  purpose   String
+  scope     String
+  createdAt DateTime @default(now())
+
+  @@index([userId])
 }
 
 // One row per registered passkey (aka credential)

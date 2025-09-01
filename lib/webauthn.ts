@@ -7,7 +7,7 @@ import {
   type VerifiedRegistrationResponse,
   type VerifiedAuthenticationResponse,
 } from '@simplewebauthn/server';
-import base64url from 'base64url';
+import { isoBase64URL, isoUint8Array } from '@simplewebauthn/server/helpers';
 
 const rpID = process.env.WEBAUTHN_RP_ID!;
 const rpName = process.env.WEBAUTHN_RP_NAME || 'Metal Lazarus';
@@ -18,11 +18,11 @@ export async function startRegistration(userId: string, userName: string) {
   const options = await generateRegistrationOptions({
     rpName,
     rpID,
-    userID: userId,
+    userID: isoUint8Array.fromUTF8String(userId),
     userName: userName || userId,
     // prevent re-registration of same credential
     excludeCredentials: existing.map(c => ({
-      id: base64url.toBuffer(c.id),
+      id: c.id,
       type: 'public-key' as const,
       transports: (c.transports || '').split(',').filter(Boolean) as any,
     })),
@@ -61,21 +61,21 @@ export async function finishRegistration(userId: string, responseJSON: any) {
   const { verified, registrationInfo } = verification;
   if (!verified || !registrationInfo) throw new Error('Registration failed');
 
-  const credentialId = base64url(registrationInfo.credentialID);
-  const publicKey = base64url(Buffer.from(registrationInfo.credentialPublicKey));
+  const credentialId = registrationInfo.credential.id;
+  const publicKey = isoBase64URL.fromBuffer(registrationInfo.credential.publicKey);
 
   await prisma.passkey.upsert({
     where: { id: credentialId },
     update: {
       publicKey,
-      counter: registrationInfo.counter,
+      counter: registrationInfo.credential.counter || 0,
       lastUsedAt: new Date(),
     },
     create: {
       id: credentialId,
       userId,
       publicKey,
-      counter: registrationInfo.counter,
+      counter: registrationInfo.credential.counter || 0,
       transports: (responseJSON.response?.transports || []).join(','),
       deviceName: responseJSON.clientExtensionResults?.devicePubKey?.alg || null,
     },
@@ -90,7 +90,7 @@ export async function startAuthentication(userId: string) {
     rpID,
     userVerification: 'preferred',
     allowCredentials: credentials.map(c => ({
-      id: base64url.toBuffer(c.id),
+      id: c.id,
       type: 'public-key' as const,
       transports: (c.transports || '').split(',').filter(Boolean) as any,
     })),
@@ -120,11 +120,10 @@ export async function finishAuthentication(userId: string, responseJSON: any) {
     expectedChallenge: record.challenge,
     expectedOrigin: origin,
     expectedRPID: rpID,
-    authenticator: {
-      credentialID: base64url.toBuffer(passkey.id),
-      credentialPublicKey: base64url.toBuffer(passkey.publicKey),
+    credential: {
+      id: passkey.id,
+      publicKey: isoBase64URL.toBuffer(passkey.publicKey),
       counter: passkey.counter,
-      transports: (passkey.transports || '').split(',').filter(Boolean) as any,
     },
     requireUserVerification: true,
   });

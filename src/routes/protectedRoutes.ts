@@ -1,4 +1,5 @@
-import type { Router, Request, Response } from 'express';
+import type { Request, Response } from 'express';
+import { Router } from 'express';
 import { verifySession } from '../middleware/verifySession.ts';
 
 const router = Router();

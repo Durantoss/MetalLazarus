@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from 'express';
-const { Request, Response, NextFunction } = express;
+
 import jwt from 'jsonwebtoken';
 
 const jwtSecret = process.env.JWT_SECRET!;
@@ -12,6 +12,10 @@ export function verifySession(req: Request, res: Response, next: NextFunction) {
   }
 
   const token = authHeader.split(' ')[1];
+
+  if (!token) {
+    return res.status(401).json({ error: 'Missing or invalid token' });
+  }
 
   try {
     const decoded = jwt.verify(token, jwtSecret);
