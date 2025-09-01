@@ -43,5 +43,36 @@ pids
 # Coverage directory used by tools like istanbul
 coverage/
 
+# Compiled JavaScript files (contain same sensitive data as source)
+*.js
+*.js.map
+*.d.ts
+*.d.ts.map
+
+# Local database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Session and cache files
+sessions/
+.cache/
+tmp/
+temp/
+
+# Additional IDE files
+.vscode/settings.json
+.idea/workspace.xml
+
+# Backup and temporary files
+*.bak
+*.tmp
+*~
+.#*
+
+# OS-specific files (additional)
+*.lnk
+desktop.ini
+
 # Prisma
 .env
